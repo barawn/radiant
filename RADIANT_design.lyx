@@ -1,0 +1,1745 @@
+#LyX 2.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 508
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Section
+Envelope trigger
+\end_layout
+
+\begin_layout Standard
+Each channel has an additional low-power envelope trigger based on a biased
+ Schottky diode.
+ An envelope detector effectively has two characteristic frequencies: the
+ upper and lower limits of its video bandwidth.
+ The current design uses an approximately 
+\begin_inset Formula $10-80\,\text{MHz}$
+\end_inset
+
+ video bandwidth, which implies that the output is roughly the integrated
+ power over a 
+\begin_inset Formula $\sim12.5\,\text{ns}$
+\end_inset
+
+ window relative to the amount of power seen in the previous 
+\begin_inset Formula $100\,\text{ns}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Subsection
+Diode circuit
+\end_layout
+
+\begin_layout Standard
+The 
+\end_layout
+
+\begin_layout Subsection
+Threshold generation
+\end_layout
+
+\begin_layout Standard
+The output of the envelope trigger is fed into one side of an LVDS input
+ pair on the main FPGA, to allow using the LVDS input as a comparator.
+ The other side of the LVDS input is the trigger threshold, which is generated
+ via pulse-width modulation (PWM) from a separate FPGA pin, coupled to a
+ smoothing capacitor through a series resistor.
+ The RC filter frequency (
+\begin_inset Formula $0.1\,\mu\text{F}$
+\end_inset
+
+ and 
+\begin_inset Formula $4.7\,\text{k}\Omega$
+\end_inset
+
+) result in 
+\begin_inset Formula $\sim0.1\,\text{mV}$
+\end_inset
+
+ ripple with a 
+\begin_inset Formula $100\,\text{MHz}$
+\end_inset
+
+ PWM, trivially achievable in an FPGA using a DSP accumulator based design.
+ Note that the step response for this output is 
+\begin_inset Formula $\sim1\,\text{ms}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Because the PWM output is in close proximity to the threshold itself, there
+ would be some concern regarding high-frequency switching artifacts.
+ A HyperLynx LineSim simulation was performed to verify that the transient
+ induced by the output switch is also sufficiently small (
+\begin_inset Formula $<0.1\,\text{mV}$
+\end_inset
+
+).
+ It is worth noting that if a faster step response is desired (at the expense
+ of ripple), the correct solution is to reduce the size of the 
+\emph on
+capacitor
+\emph default
+, not the size of the 
+\emph on
+resistor
+\emph default
+.
+ This is because the switching artifact corresponds to 
+\begin_inset Formula $O1\left(100\,\text{MHz}\right)$
+\end_inset
+
+ frequencies, at which point the capacitor's impedance (on the order of
+ 
+\begin_inset Formula $0.1\,\Omega$
+\end_inset
+
+) is dominated by both its effective series resistance and inductance, rather
+ than the capacitance, and neither of these parasitics change as the capacitance
+ is decreased.
+ The switching artifact size is therefore set nearly entirely by the size
+ of the resistor - note that simply treating this as a simple resistive
+ divider validates the simulation in this case, as 
+\begin_inset Formula $0.1\,\Omega/4700\,\Omega\approx2\times10^{-5}$
+\end_inset
+
+, and a switching transient of 
+\begin_inset Formula $2.5\,\text{V}$
+\end_inset
+
+ would therefore result in 
+\begin_inset Formula $\sim0.1\,\text{mV}$
+\end_inset
+
+ peak-to-peak variations, as observed.
+ This is, in fact, the reason why a resistor is needed at all - using only
+ the effective series resistance from the output driver (
+\begin_inset Formula $\sim78\,\Omega$
+\end_inset
+
+) would result in switching artifacts on the order of 
+\begin_inset Formula $15\,\text{mV}$
+\end_inset
+
+, clearly too high to be acceptable.
+ Increasing the series resistor to further reduce the ripple/switching artifacts
+ is possible, however 
+\begin_inset Formula $4.7\,\text{k\Omega}$
+\end_inset
+
+ was chosen to remain significantly far away from the pad leakage current
+ (max 
+\begin_inset Formula $15\,\mu\text{A}$
+\end_inset
+
+).
+ Increasing the PWM frequency would actually act to increase the overall
+ ripple as the switching transients would still be high-amplitude with periods
+ of less than
+\begin_inset Formula $10\,\text{ns}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+Ripple on the threshold pin effectively acts as an increase in the input
+ noise: for reference, previous designs using a dedicated DAC and similar-scale
+ input amplitudes had noise scales on the order of 
+\begin_inset Formula $\sim20\,\text{mV}$
+\end_inset
+
+, so the additional 
+\begin_inset Formula $0.1\,\text{mV}$
+\end_inset
+
+ noise is a negligible increase, and comparable to reference noise levels
+ for a typical DAC.
+\end_layout
+
+\begin_layout Section
+On-board calibration
+\end_layout
+
+\begin_layout Subsection
+Signal generator
+\end_layout
+
+\begin_layout Subsection
+Fast pulse
+\end_layout
+
+\begin_layout Subsection
+Calibration fanout
+\end_layout
+
+\begin_layout Standard
+The calibration fanout was designed to provide a calibration signal of up
+ to 
+\begin_inset Formula $\sim10\,\text{dBm}$
+\end_inset
+
+ (
+\begin_inset Formula $\sim2\,\text{V}$
+\end_inset
+
+ peak-to-peak) to the LAB4D and trigger circuits.
+ Providing this as a full 24-way fanout would be too difficult to route,
+ since the calibration signals need to be fed into the inputs of each channel,
+ and the channel inputs are at the edge of the board.
+ Therefore a compromise solution was designed where the signal is broadcast
+ to 4 channels (1 quad) on each side at a time, with the signal routing
+ on each side being point-to-point through an RF switch.
+ The output power of the ADF4351 is 
+\begin_inset Formula $-4-5\,\text{dBm}$
+\end_inset
+
+ - therefore, after the switch, the input power to each quad is 
+\begin_inset Formula $-7-2\,\text{dBm}$
+\end_inset
+
+.
+ At each quad, a Mini-Circuits TSY-13LNB+ amplifier boosts the power to
+ 
+\begin_inset Formula $8.3-17.3\,\text{dBm}$
+\end_inset
+
+ (at the high side, the amplifier will be in compression at low frequencies
+ but still well within the maximum power input specification).
+ Following the amplifier, a Mini-Circuits SCA-4-10+ splitter distributes
+ the signal to each input channel, with a power range of 
+\begin_inset Formula $2.3-11.3\,\text{dBm}$
+\end_inset
+
+.
+ Note that this analysis ignores insertion losses along the way, which will
+ reduce the final power by 
+\begin_inset Formula $2-3\,\text{dB}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Section
+Power supply design
+\end_layout
+
+\begin_layout Subsection
+Input power
+\end_layout
+
+\begin_layout Standard
+The RADIANT board accepts an input voltage from 
+\begin_inset Formula $4.5\,\text{V}-5.5\,\text{V}$
+\end_inset
+
+ for normal operation.
+ Outside of this range (from 
+\begin_inset Formula $3.4\,\text{V}-4.5\,\text{V}$
+\end_inset
+
+ and 
+\begin_inset Formula $5.5\,\text{V}-7.6\,\text{V}$
+\end_inset
+
+) the board will power on but report input voltage out of range.
+ For input voltages below 
+\begin_inset Formula $3.6\,\text{V}$
+\end_inset
+
+ and above 
+\begin_inset Formula $7.6\,\text{V}$
+\end_inset
+
+ the board will not power on, but instead indicate an input voltage fault.
+ Input voltages must be between 
+\begin_inset Formula $-20\,\text{V}$
+\end_inset
+
+ to 
+\begin_inset Formula $20\,\text{V}$
+\end_inset
+
+ to prevent damage.
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="4" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+Voltage Range
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+Minimum
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+Maximum
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Normal Operating
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $4.5\,\text{V}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $5.5\,\text{V}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Input Voltage Out-Of-Range
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $3.6\,\text{V}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $7.6\,\text{V}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Absolute Maximum
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $-20\,\text{V}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $20\,\text{V}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Reverse voltage protection is provided via an Si7157DP P-channel MOSFET
+ with 
+\begin_inset Formula $\sim2\,\text{m\Omega}$
+\end_inset
+
+ on-resistance (with gate-source voltage clamped to 
+\begin_inset Formula $12\,\text{V}$
+\end_inset
+
+).
+ Overvoltage/undervoltage/overcurrent protection is provided via a TPS259823ONRG
+E (
+\begin_inset Formula $7.6\,\text{V}$
+\end_inset
+
+ OVP, circuit breaker overcurrent behavior) eFuse with 
+\begin_inset Formula $\sim2.7\,\text{m\Omega}$
+\end_inset
+
+ on-resistance.
+ Board supply current is limited to 
+\begin_inset Formula $3.5\,\text{A}$
+\end_inset
+
+.
+ This is a factor of 1.75 increase over the typical expected (
+\begin_inset Formula $\sim2\,\text{A}$
+\end_inset
+
+) but should allow for all possible FPGA configurations to be used.
+ At 
+\begin_inset Formula $2\,\text{A}$
+\end_inset
+
+ nominal current, the input power protection circuit consumes 
+\begin_inset Formula $\sim20\,\text{mW}$
+\end_inset
+
+.
+ The TPS259823 was chosen specifically for this point: the next-smallest
+ eFuse on-resistance would result in a 
+\begin_inset Formula $\sim6\times$
+\end_inset
+
+ increase in power consumption for the protection circuit.
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="8" columns="2">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell multicolumn="1" alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+Protection Circuit Behavior
+\end_layout
+
+\end_inset
+</cell>
+<cell multicolumn="2" alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Undervoltage Lockout (nom.)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $3.6\,\text{V}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Overvoltage Lockout (intrinsic)
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $7.6\,\text{V}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Current Limit
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $3.5\,\text{A}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Fast Trip Current Limit
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $7.35\,\text{A}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Overcurrent Limit Trip Time
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $1\,\text{ms}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Retry Delay
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $100\,\text{ms}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Number of Retries
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+4
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Input Voltage Out-Of-Range
+\end_layout
+
+\begin_layout Standard
+The input power protection circuit guarantees that the main 
+\begin_inset Formula $+5\text{V}$
+\end_inset
+
+ supply is between 
+\begin_inset Formula $3.6-7.6\,\text{V}$
+\end_inset
+
+.
+ All onboard DC-DC converters can accept this range.
+ However, the calibration amplifier circuits use an MMG3H21NT1 amplifier,
+ which is characterized from 
+\begin_inset Formula $4.5\,\text{V}-5.5\,\text{V}$
+\end_inset
+
+ (and with a rapidly increasing current past 
+\begin_inset Formula $5.5\,\text{V}$
+\end_inset
+
+).
+ The calibration amplifiers are off by default, and switched on via the
+ board manager microcontroller.
+ Therefore if the input voltage is outside of the 
+\begin_inset Formula $5\,\text{V}\pm10%\%
+$
+\end_inset
+
+ range, the board manager will not enable any downstream devices and responds
+ to all commands with an Input Voltage Out-Of-Range error, along with the
+ measured input voltage.
+ The allowable input voltage will be programmable by the board manager to
+ override this restriction if needed (although the calibration amplifiers
+ are protected from turn-on past 
+\begin_inset Formula $6\,\text{V}$
+\end_inset
+
+ by the load switch).
+\end_layout
+
+\begin_layout Standard
+The calibration amplifiers are protected from damage via an AOZ1327DI load
+ switch with overvoltage protection beyond 
+\begin_inset Formula $6\,\text{V}$
+\end_inset
+
+, thus ensuring that even if the board manager somehow enables the amplifier
+ from 
+\begin_inset Formula $6-7.6\,\text{V}$
+\end_inset
+
+, the amplifier itself will not be damaged.
+ At the maximum voltage of 
+\begin_inset Formula $6\,\text{V}$
+\end_inset
+
+, the MMG3H21NT1 consumes 
+\begin_inset Formula $150\,\text{mA}$
+\end_inset
+
+, resulting in a power consumption of 
+\begin_inset Formula $0.9\,\text{W}$
+\end_inset
+
+ and a temperature rise of 
+\begin_inset Formula $34\,\deg\text{C}$
+\end_inset
+
+, which will still remain comfortably inside the maximum junction temperature
+ range for all operating temperatures.
+ The amplifier turn-on time is set to 
+\begin_inset Formula $100\,\mu\text{s}$
+\end_inset
+
+, which limits the input surge current to 
+\begin_inset Formula $500\,\text{mA}$
+\end_inset
+
+.
+ At the nominal voltage, the calibration amplifiers consume 
+\begin_inset Formula $90\,\text{mA}$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Subsection
+Power rails
+\end_layout
+
+\begin_layout Standard
+The main power rails for the RADIANT board are
+\end_layout
+
+\begin_layout Itemize
+5V (nominal) input
+\end_layout
+
+\begin_layout Itemize
+3.3V (logic)
+\end_layout
+
+\begin_layout Itemize
+2.5V (logic, FPGA, CPLDs, clocking)
+\end_layout
+
+\begin_layout Itemize
+1.8V (FPGA)
+\end_layout
+
+\begin_layout Itemize
+1.0V (FPGA)
+\end_layout
+
+\begin_layout Itemize
+2.6V (digitizers)
+\end_layout
+
+\begin_layout Itemize
+3.1V (trigger amps)
+\end_layout
+
+\begin_layout Standard
+The 2.6V and 3.1V voltages are regulated down to 2.5V and 3.0V for the RF-sensitive
+ sections using RippleBlocker LDO regulators.
+\end_layout
+
+\begin_layout Subsection
+2.6V LAB4D supply
+\end_layout
+
+\begin_layout Standard
+\align center
+\begin_inset Tabular
+<lyxtabular version="3" rows="7" columns="2">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top" width="0pt">
+<column alignment="center" valignment="top">
+<row>
+<cell multicolumn="1" alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\series bold
+Summary
+\end_layout
+
+\end_inset
+</cell>
+<cell multicolumn="2" alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Nominal Voltage
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $2.59\pm0.025\,\text{V}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Nominal Current
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $2.4\,\text{A}$
+\end_inset
+
+(estim.)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Purpose
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+LAB4D Digitizer Supply
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Device
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+TPS54824
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Efficiency
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $95.5%\%
+$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+Ripple
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+\begin_inset Formula $3.51\,\text{mV}$
+\end_inset
+
+
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The majority of the power consumption of the board comes from via the 
+\begin_inset Formula $2.6\,\text{V}$
+\end_inset
+
+ rail to the digitizers, which should be approximately 
+\begin_inset Formula $2.4\,\text{A}$
+\end_inset
+
+, or around 
+\begin_inset Formula $5\,\text{W}$
+\end_inset
+
+.
+ However, because this rail feeds an RF-sensitive device, it makes sense
+ to pay special attention to this converter.
+ The converter was chosen as a TPS54824, which was a balance between total
+ footprint size of the solution, efficiency, and output ripple.
+ At 1.8A output, the output voltage should be 
+\begin_inset Formula $2.59\pm0.025\,\text{V}$
+\end_inset
+
+.
+ The converter should be 95.5% efficient, which is equivalent to an additional
+ power consumption of 
+\begin_inset Formula $0.21\,\text{W}$
+\end_inset
+
+, and should have an output ripple of 3.51 mV.
+ This does require a very low dropout voltage on the LDO: we therefore regulate
+ each individual digitizer separately, which should reduce the per-regulator
+ consumption to 
+\begin_inset Formula $75\,\text{mA}$
+\end_inset
+
+, at which point the dropout voltage should be less than 
+\begin_inset Formula $30\,\text{mV}$
+\end_inset
+
+ using a MIC94325.
+ The PSRR at the targeted frequency of ~500 kHz is better than 50 dB, which
+ would reduce the output ripple to 
+\begin_inset Formula $0.02\,\text{LSBs}$
+\end_inset
+
+.
+ The total footprint size of the solution is under 
+\begin_inset Formula $200\,\text{mm}^{2}$
+\end_inset
+
+, or approximately 
+\begin_inset Formula $0.8\times0.4"$
+\end_inset
+
+.
+ Note that the main advantage of a small footprint in this case is that
+ it becomes practical to additionally shield the converter section if needed:
+ higher efficiency and lower output ripple designs are both possible, but
+ the required inductor would be far too large to easily shield.
+ In addition, this design can be 
+\emph on
+synchronized
+\emph default
+ to the system clock, which will allow removal of switching artifacts from
+ coherently-added waveforms if needed.
+\end_layout
+
+\begin_layout Standard
+Note that the feedback resistors for the 2.6V supply are 
+\begin_inset Formula $0.1%\%
+$
+\end_inset
+
+ tolerance, which will guarantee that there exists enough headroom for the
+ subsequent LDO.
+\end_layout
+
+\begin_layout Subsection
+3.1V trigger supply
+\end_layout
+
+\begin_layout Standard
+Similarly, special attention was paid to the 3.1V supply.
+ This supply is slightly less critical because although it feeds an RF sensitive
+ device, the output bandwidth of the trigger system is below 100 MHz.
+ A TPS54424 was used in this case, which is a 
+\begin_inset Formula $4\,\text{A}$
+\end_inset
+
+ version of the TPS54824.
+ This design nominally outputs 
+\begin_inset Formula $3.074\pm0.04\,\text{V}$
+\end_inset
+
+.
+ Again, each trigger circuit has their own LDO, a MIC94310.
+ Total load from the trigger circuit should be 
+\begin_inset Formula $12.5\,\text{mA}$
+\end_inset
+
+, at which point the dropout voltage should be less than 
+\begin_inset Formula $5\,\text{mV}$
+\end_inset
+
+.
+ Output ripple should be 
+\begin_inset Formula $3.0\,\text{mV}$
+\end_inset
+
+, reduced by greater than 
+\begin_inset Formula $50\,\text{dB}$
+\end_inset
+
+, resulting in a final ripple of 
+\begin_inset Formula $\sim10\,\mu\text{V}$
+\end_inset
+
+, which should have no impact on the trigger subsystem.
+ Again, this design can be synchronized to the overall system clock if needed.
+ Efficiency should be 
+\begin_inset Formula $92.8%\%
+$
+\end_inset
+
+, equivalent to an added power consumption of 
+\begin_inset Formula $0.06\,\text{W}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+Built-in self test
+\end_layout
+
+\begin_layout Standard
+The RADIANT board is fully capable of evaluating all of its major subsystems
+ systematically with no external components.
+ This is accomplished by an onboard 
+\begin_inset Quotes eld
+\end_inset
+
+board manager
+\begin_inset Quotes erd
+\end_inset
+
+ which during normal operation also acts to control and program certain
+ onboard features, and a few additional low-cost parts to allow routing
+ normally-unused signals during built-in self test (BIST) mode.
+\end_layout
+
+\begin_layout Subsection
+RF quad BIST
+\end_layout
+
+\begin_layout Standard
+During BIST, the power supplies and basic 
+\begin_inset Quotes eld
+\end_inset
+
+alive/dead
+\begin_inset Quotes erd
+\end_inset
+
+ functionality of each RF quad are determined.
+ This requires both the auxiliary CPLD and the main FPGA to be placed into
+ a special BIST mode as well.
+ The quad is switched into BIST mode by setting bit 2 of the corresponding
+ 
+\begin_inset Formula $\text{I}^{2}\text{C}$
+\end_inset
+
+ GPIO expander.
+ BIST mode connects several signals in the quad in an alternate configuration.
+\end_layout
+
+\begin_layout Itemize
+BM_MOSI is connected to 
+\begin_inset Formula $\overline{\text{LDAC}}$
+\end_inset
+
+ for the tunnel diode bias DAC (which allows programming its 
+\begin_inset Formula $\text{I}^{2}\text{C}$
+\end_inset
+
+ address) using an N-channel MOSFET.
+ During normal operation the N-channel MOSFET is not in conduction and thus
+ 
+\begin_inset Formula $\overline{\text{LDAC}}$
+\end_inset
+
+ remains high regardless of BM_MOSI.
+\end_layout
+
+\begin_layout Itemize
+SHOUT is connected to SS_INCR on the LAB4D (which allows verifying the serial
+ configuration register) through an N-channel MOSFET and a diode.
+ This reverses the normal direction of SS_INCR, thus requiring the auxiliary
+ CPLD pin direction (and the main FPGA pin direction) to be reversed.
+ During normal operation the N-channel MOSFET is not in conduction and the
+ corresponding diode prevents conduction through the body diode of the FET.
+\end_layout
+
+\begin_layout Itemize
+Analog switches are enabled, which allows for selecting analog voltages
+ in the RF quad.
+ The bits selected depend on the states of the WR[1:0] inputs to each LAB
+ and bits 1 and 3 on the GPIO expander.
+\end_layout
+
+\begin_layout Standard
+Note that bit 3 is multipurpose in the RF quad - it can also be forced low
+ if the calibration amplifier is in overcurrent/overtemperature mode.
+ See below for the proper BIST procedure to deal with this feature.
+ The analog channels are
+\end_layout
+
+\begin_layout Standard
+\begin_inset Tabular
+<lyxtabular version="3" rows="5" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+bit 3
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+bit 1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+output
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+cascaded input
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+LAB4D_MON (multiplexed monitor)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
++5V_SGx
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+5.0V, 3.1V, or 2.6V (depending on quad)
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The LAB4D_MON input is a cascaded, multiplexed input, with a 4:1 analog
+ switch near each LAB4D.
+ The outputs are selected via WRn_S[1:0].
+\end_layout
+
+\begin_layout Standard
+\begin_inset Tabular
+<lyxtabular version="3" rows="5" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+WRn_S[1]
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+WRn_S[0]
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+output
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+cascaded input
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+AMON_n
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+TRIG3.0V_n
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+A2.5V_n
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Note that the analog switches used are actually dual 4:1 switches, but only
+ 1 of the 2 switches are used.
+\end_layout
+
+\begin_layout Subsubsection
+RF quad BIST procedure
+\end_layout
+
+\begin_layout Enumerate
+Beginning with quad 0, write the GPIO expander 
+\begin_inset Formula $\text{I}^{2}\text{C}$
+\end_inset
+
+ address, and look for acknowledge.
+ If the address is acknowledged, the GPIO expander is available and working.
+ (RF_QUADn_GPIO_PRESENT = 1).
+\end_layout
+
+\begin_layout Enumerate
+Enable the pull-up on bits 3, 6, and 7 of the GPIO expander and configure
+ as inputs.
+ Configure bit 0, 1, 2, 4, and 5 as outputs and set to 0.
+ Read state of bits 3, 6, and 7.
+ Bit 3 should be high, bits 6 and 7 should match the expectations based
+ on the configuration resistors or the DIP switch (depends on desired board
+ configuration).
+ (RF_QUADn_GPIO_CONFIG_OK = 1).
+ If this step fails, end BIST.
+\end_layout
+
+\begin_layout Enumerate
+Set bit 0 high.
+ Read bit 3 and confirm that bit 3 is still high.
+ If bit 3 is low, the +5V_SGx switch is in overcurrent/overtemp and the
+ quad signal generator amplifier section must be debugged.
+ If bit 3 is high, the switch is not in overcurrent.
+ (RF_QUADn_FLG_OK = 1).
+ Set bit 0 low.
+ Continue if this step fails, however, RF_QUADn_5VSG_OK will likely fail
+ later.
+\end_layout
+
+\begin_layout Enumerate
+Write the DAC 
+\begin_inset Formula $\text{I}^{2}\text{C}$
+\end_inset
+
+ address, and look for acknowledge.
+ If the address is not acknowledged, write 1 to bit 2 (BIST) and update
+ the DAC EEPROM with the desired address using the MCP4728 update procedure,
+ using BM_MOSI as 
+\begin_inset Formula $\overline{\text{LDAC}}$
+\end_inset
+
+.
+ Repeat DAC 
+\begin_inset Formula $\text{I}^{2}\text{C}$
+\end_inset
+
+ check.
+ (RF_QUADn_DAC_PRESENT=1).
+ Write 0 to bit 2 (BIST).
+\end_layout
+
+\begin_layout Enumerate
+Repeat from step 1 for all RF quads.
+\end_layout
+
+\begin_layout Enumerate
+Beginning with quad 0, configure bit 3 as an output.
+ Set bit 3, bit 1, and bit 2 (BIST).
+ Read analog voltage and confirm that it meets expectation for quad number.
+ (RF_QUADn_AUX_VOLTAGE_OK=1).
+\end_layout
+
+\begin_layout Enumerate
+Set bit 3 to 1 and bit 1 to 0.
+ Read analog voltage and confirm that it is 0.
+ (RF_QUADn_5VSG_OFF_OK=1).
+\end_layout
+
+\begin_layout Enumerate
+Set bit 0 to 1.
+ Wait 10 ms and read analog voltage and confirm that it meets expectations
+ for +5V.
+ (RF_QUADn_5VSG_OK=1).
+\end_layout
+
+\begin_layout Enumerate
+Set bit 3 to 0 and bit 1 to 1.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Beginning with LAB4D 0 + 4*quad number: configure aux CPLDs and FPGA to
+ BIST mode, and select LAB4D for BIST in correct aux CPLD.
+ Set WRn_S[1:0] to 11.
+ Read analog voltage and confirm that it is 0.
+ (RF_QUADn_LABn_OFF_OK = 1).
+\end_layout
+
+\begin_layout Enumerate
+Set bit 5 to 1.
+ Read analog voltage and confirm that it is within expectations.
+ (RF_QUADn_LABn_2V5_OK=1).
+\end_layout
+
+\begin_layout Enumerate
+Clock in a pattern via SIN/SCLK and verify that pattern is visible on SS_INCR.
+ (RF_QUADn_LABn_SIN_OK=1).
+\end_layout
+
+\begin_layout Enumerate
+Update LAB4D configuration to set AMON to a desired voltage.
+ Set WRn_S[1:0] to 01.
+ Read analog voltage and confirm that it meets expectations.
+ (RF_QUADn_LABn_AMON_OK = 1).
+\end_layout
+
+\begin_layout Enumerate
+Set WRn_S[1:0] to 10.
+ Read analog voltage and confirm that it is 0.
+ (RF_QUADn_TRIGn_OFF_OK = 1).
+\end_layout
+
+\begin_layout Enumerate
+Set bit 4 to 1.
+ Read analog voltage and confirm that it is within expectations.
+ (RF_QUADn_TRIGn_3V0_OK=1).
+\end_layout
+
+\begin_layout Enumerate
+Set bits 5 and 4 to 0.
+ Repeat from step 10 for remaining LABs.
+ 
+\end_layout
+
+\begin_layout Enumerate
+Set bits 3 and 1 to 0.
+ Repeat from step 6 for all remaining quads.
+\end_layout
+
+\begin_layout Enumerate
+Starting with quad 0, set bit 2 to 0.
+\end_layout
+
+\begin_layout Enumerate
+Repeat step 18 for all remaining quads.
+\end_layout
+
+\begin_layout Enumerate
+Configure aux CPLDs and FPGA for normal mode.
+\end_layout
+
+\begin_layout Standard
+At this point the supplies and basic connectivity for each quad can be considere
+d OK.
+ Additional internal LAB4D checks can be performed at step 13 if desired,
+ however, when in BIST mode, data can not be read out from the LAB4Ds due
+ to the overriding of SS_INCR.
+\end_layout
+
+\end_body
+\end_document
