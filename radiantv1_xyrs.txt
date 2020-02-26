@@ -1997,6 +1997,7 @@ J19        5910.0000  9875.0000  270        EXACT     (FREE)    Bottom
 J20        500.0000   12150.0000 270        EXACT     (FREE)    Top                           
 J21        5960.0000  2320.0000  270        EXACT     (FREE)    Bottom                        
 J22        5250.0000  11210.0000 090        EXACT     (FREE)    Top                           
+J23        5250.0000  11500.0000 090        EXACT     (FREE)    Top                           
 L1         5940.0000  1570.0000  270        EXACT     (FREE)    Top                           
 L1A        1345.0000  680.0000   270        EXACT     (FREE)    Top                           
 L1B        1345.0000  1680.0000  270        EXACT     (FREE)    Top                           
@@ -3311,6 +3312,8 @@ R878       11420.0000 2180.0000  180        EXACT     (FREE)    Top
 R879       11493.0000 10180.0000 180        EXACT     (FREE)    Top                           
 R880       11424.0000 10180.0000 180        EXACT     (FREE)    Top                           
 R881       6590.0000  10590.0000 180        EXACT     (FREE)    Bottom                        
+R882       5350.0000  6040.0000  270        EXACT     (FREE)    Top                           
+R883       7060.0000  6350.0000  270        EXACT     (FREE)    Top                           
 S1         6170.0000  1740.0000  090        EXACT     (FREE)    Top                           
 S1A        1010.0000  790.0000   090        EXACT     (FREE)    Top                           
 S1B        1010.0000  1790.0000  090        EXACT     (FREE)    Top                           
