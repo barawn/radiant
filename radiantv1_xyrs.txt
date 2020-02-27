@@ -2231,7 +2231,7 @@ L14        4350.0000  11040.0000 270        EXACT     (FREE)    Top
 L15        4350.0000  11860.0000 270        EXACT     (FREE)    Top                           
 L16        7680.0000  11045.0000 000        EXACT     (FREE)    Top                           
 L17        7680.0000  11845.0000 000        EXACT     (FREE)    Top                           
-L18        6830.0000  10380.0000 270        EXACT     (FREE)    Top                           
+L18        6810.0000  10380.0000 270        EXACT     (FREE)    Top                           
 L19        4920.0000  10340.0000 270        EXACT     (FREE)    Top                           
 L20        11450.0000 9980.0000  180        EXACT     (FREE)    Bottom                        
 L21        11450.0000 5980.0000  180        EXACT     (FREE)    Bottom                        
