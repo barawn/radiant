@@ -1,19 +1,19 @@
-radiantv1.gtl : Top Copper
-radiantv1.gl2 : Inner Layer 2
-radiantv1.gl3 : Inner Layer 3
-radiantv1.gl4 : Inner Layer 4
-radiantv1.gl5 : Inner Layer 5
-radiantv1.gl6 : Inner Layer 6
-radiantv1.gl7 : Inner Layer 7
-radiantv1.gbl : Bottom Copper
-radiantv1.gto : Top Silkscreen
-radiantv1.gbo : Bottom Silkscreen
-radiantv1.gts : Top Soldermask
-radiantv1.gbs : Bottom Soldermask
-radiantv1.gtp : Top Solderpaste
-radiantv1.gbp : Bottom Solderpaste
+radiantv2.gtl : Top Copper
+radiantv2.gl2 : Inner Layer 2
+radiantv2.gl3 : Inner Layer 3
+radiantv2.gl4 : Inner Layer 4
+radiantv2.gl5 : Inner Layer 5
+radiantv2.gl6 : Inner Layer 6
+radiantv2.gl7 : Inner Layer 7
+radiantv2.gbl : Bottom Copper
+radiantv2.gto : Top Silkscreen
+radiantv2.gbo : Bottom Silkscreen
+radiantv2.gts : Top Soldermask
+radiantv2.gbs : Bottom Soldermask
+radiantv2.gtp : Top Solderpaste
+radiantv2.gbp : Bottom Solderpaste
 
-radiantv1.txt : NC Drill
+radiantv2.txt : NC Drill
 
 Designed with a stackup of
 
