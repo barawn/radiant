@@ -7,10 +7,10 @@ module radiant_aux(
         output MONTIMINGOUT_N,
         input SRCLKIN,
 		input RAMPIN,
-		input SS_INCRIN,
+		inout SS_INCRIN,
 		input SCLKIN,
 		output [11:0] SCLK,
-		output [11:0] SS_INCR,		
+		inout  [11:0] SS_INCR,		
 		output [11:0] RAMP,
         output [11:0] SRCLK_P,
         output [11:0] SRCLK_N,
@@ -29,8 +29,6 @@ module radiant_aux(
 		input [9:0] WRIN,
 		output [3:0] LED
 );
-	// This ISN'T actually used here. The inversion is fixed at the main FPGA on a channel-by-channel
-	// basis. It's just here for reference.
 	// MONTIMING inverted pins:
 	// P0		1
 	// not P1	0
@@ -61,8 +59,10 @@ module radiant_aux(
 	// or 1000 1001 1111
 	parameter [11:0] SC_INVERT = 12'b100010011111;
 
-                reg [3:0] ctrl_sel = {4{1'b0}};
-                always @(posedge CTRL_CLK) ctrl_sel <= {ctrl_sel[2:0],CTRL_DATA};
+	parameter [11:0] WR_MAP =    12'b100000000000;
+
+                reg [7:0] ctrl_sel = {8{1'b0}};
+                always @(posedge CTRL_CLK) ctrl_sel <= {CTRL_DATA, ctrl_sel[7:1]};
 
                 wire [15:0] montiming_internal;
 				assign montiming_internal[12] = montiming_internal[4];
@@ -70,23 +70,41 @@ module radiant_aux(
 				assign montiming_internal[14] = montiming_internal[6];
 				assign montiming_internal[15] = montiming_internal[7];
 				
-				assign WR0 = WRIN[4:0];
-				assign WR1 = WRIN[4:0];
-				assign WR2 = WRIN[4:0];
-				assign WR3 = WRIN[4:0];
-				assign WR4 = WRIN[4:0];
-				assign WR5 = WRIN[4:0];
-				assign WR6 = WRIN[4:0];
-				assign WR7 = WRIN[4:0];
-				assign WR8 = WRIN[4:0];
-				assign WR9 = WRIN[4:0];
-				assign WR10 = WRIN[4:0];
-				// whatever. I need to make this configurable somehow.
-				// for now I just want all the pins.
-				assign WR11 = WRIN[9:5];
+				// this is AMAZING AMOUNTS OF SLEAZE
+				// In BIST mode, we want every non-selected monitor to be set to '4' (passthrough),
+				// or 100. The selected monitor gets its values picked off from ctrl_sel[6:4].
+				// We also don't want to screw with the timing here and run the WR guys
+				// through muxes or anything. So how do we do it? Easy: it's static! In BIST mode
+				// the LAB4 controller isn't running, so we tristate the WRs.
+				
+				wire [4:0] analog_sel = { 2'b00, ctrl_sel[6:4] };
+				wire [4:0] analog_passthrough = 5'b00100;
+				// Not a big fan of this, will probably change this to JTAG control so that in normal
+				// operation (including MONTIMING mux) BIST isn't accidentally activated.
+				wire bist = ctrl_sel[7];
+
+				wire [4:0] wr_out[11:0];
+								
+				wire [4:0] wr_low;
+				wire [4:0] wr_high;
+								
+				assign WR0 = wr_out[0];
+				assign WR1 = wr_out[1];
+				assign WR2 = wr_out[2];
+				assign WR3 = wr_out[3];
+				assign WR4 = wr_out[4];
+				assign WR5 = wr_out[5];
+				assign WR6 = wr_out[6];
+				assign WR7 = wr_out[7];
+				assign WR8 = wr_out[8];
+				assign WR9 = wr_out[9];
+				assign WR10 = wr_out[10];
+				assign WR11 = wr_out[11];
 				
                 wire srclk_internal;
 				wire ss_incr_internal;
+				wire [15:0] shout_internal;
+				assign shout_internal[15:12] = shout_internal[7:4];
 				wire sclk_internal;
 				wire ramp_internal;
 				IB u_srclk(.I(SRCLKIN),.O(srclk_internal));
@@ -95,21 +113,49 @@ module radiant_aux(
 				// (driven by us) and RAMP (driven by FPGA).
 				IBPU u_ramp(.I(RAMPIN),.O(ramp_internal));
 				IB u_sclk(.I(SCLKIN),.O(sclk_internal));
-				IB u_ss_incr(.I(SS_INCRIN),.O(ss_incr_internal));
+				// drive SS_INCRIN only if we're in BIST: meaning T=0 if bist=1
+				BB u_ssincr(.I(shout_internal[ctrl_sel[3:0]]),
+							.O(ss_incr_internal),
+							.T(!bist),
+							.B(SS_INCRIN));
 				generate
-                        genvar i;
+                        genvar i,j,k;
+						for (k=0;k<5;k=k+1) begin : WRIN_LOOP
+							IB u_wrlow(.I(WRIN[k]),.O(wr_low[k]));
+							IB u_wrhigh(.I(WRIN[5+k]),.O(wr_high[k]));
+						end
                         for (i=0;i<12;i=i+1) begin : IBUF
-                                ILVDS u_ilvds(.A(MONTIMING_P[i]),.AN(MONTIMING_N[i]),.Z(montiming_internal[i]));
-								OLVDS u_olvds_srclk(.A(srclk_internal ^ SC_INVERT[i]),.Z(SRCLK_P[i]),.ZN(SRCLK_N[i]));
-								// RAMP's inverted so it can idle high
-								OB u_ob_ramp(.I(~ramp_internal),.O(RAMP[i]));
-								OB u_ob_sclk(.I(sclk_internal),.O(SCLK[i]));
-								OB u_ob_ss_incr(.I(ss_incr_internal),.O(SS_INCR[i]));														
+							wire [3:0] this_lab = i;
+							wire my_montiming;
+							wire select_this_lab = (ctrl_sel[3:0] == this_lab);
+							wire [5:0] debug_tris = (select_this_lab) ? analog_sel : analog_passthrough;							
+							if (WR_MAP[i]) begin : HIGHWR
+								for (j=0;j<5;j=j+1) begin : HWRL
+									OBZPU u_wr(.I(wr_high[j]),.T(debug_tris[j] && bist),.O(wr_out[i][j]));
+								end
+							end else begin : LOWWR
+								for (j=0;j<5;j=j+1) begin : LWRL
+									OBZPU u_wr(.I(wr_low[j]),.T(debug_tris[j] && bist),.O(wr_out[i][j]));
+								end
+							end
+							ILVDS u_ilvds(.A(MONTIMING_P[i]),.AN(MONTIMING_N[i]),.Z(my_montiming));
+							assign montiming_internal[i] = my_montiming ^ MT_INVERT[i];							
+							OLVDS u_olvds_srclk(.A(srclk_internal ^ SC_INVERT[i]),.Z(SRCLK_P[i]),.ZN(SRCLK_N[i]));
+							// RAMP's inverted so it can idle high
+							OB u_ob_ramp(.I(~ramp_internal),.O(RAMP[i]));								
+							OB u_ob_sclk(.I(sclk_internal),.O(SCLK[i]));
+							// SS_INCR also acts as SHOUT in BIST mode.
+							// They have to have pullups on them because the cheat circuit can only pull down.
+							// Tristate all SS_INCRs in BIST mode.
+							BBPU u_ss_incr(.I(ss_incr_internal),
+										   .O(shout_internal[i]),
+										   .T(bist),
+										   .B(SS_INCR[i]));
                         end
                 endgenerate
 
-                wire montiming_muxed = montiming_internal[ctrl_sel];
+                wire montiming_muxed = montiming_internal[ctrl_sel[3:0]];
                 OLVDS u_olvds(.A(montiming_muxed),.Z(MONTIMINGOUT_P),.ZN(MONTIMINGOUT_N));
 
-				assign LED = ctrl_sel;
+				assign LED = ctrl_sel[7] ? ctrl_sel[7:4] : ctrl_sel[3:0];
 endmodule
