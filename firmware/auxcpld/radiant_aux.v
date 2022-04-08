@@ -59,7 +59,13 @@ module radiant_aux(
 	// or 1000 1001 1111
 	parameter [11:0] SC_INVERT = 12'b100010011111;
 
-	parameter [11:0] WR_MAP =    12'b100000000000;
+	// This maps 11 and 12 and 22 and 23 to the "high" WR bits.
+	// Because 12-20 are the surface channels, this means
+	// low left = deep
+	// high left = deep
+	// low right = surface
+	// high right = deep
+	parameter [11:0] WR_MAP =    12'b110000000000;
 
                 reg [7:0] ctrl_sel = {8{1'b0}};
                 always @(posedge CTRL_CLK) ctrl_sel <= {CTRL_DATA, ctrl_sel[7:1]};
